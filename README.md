@@ -117,12 +117,31 @@ python tests/test_crypto.py      # password round-trip, wrong-password fails, st
 python tests/test_carriers.py    # base45 / base64 round-trip; a frame through a text hop
 ```
 
-## Real-world carriers
+## qrbeam — the optical carrier, in the wild
 
-- **[qrbeam](https://github.com/enimga036197/qrbeam)** — animated QR on a screen →
-  phone camera. The optical carrier this core was distilled from.
+**[qrbeam](https://github.com/enimga036197/qrbeam)** is the flagship application: a
+sender animates a stream of QR codes on a screen, a phone camera reads them, and the
+file arrives — no pairing, no network, no app, no shared anything. It's the polished,
+browser-based, camera-decoding version of this core, and it's a genuinely useful
+niche tool people reach for (getting a file to a phone with nothing but a screen and
+a lens, across ecosystems, in locked-down environments).
+
+YoloFountain is the codec distilled out of it; the optical channel is just the
+**base45 → QR** carrier. `examples/qr_optical.py` is the minimal self-contained proof
+— it turns any data into an animated-QR GIF and reads it back **byte-exact through
+30% frame loss** (the fountain doesn't care *which* codes a camera misses):
+
+```bash
+pip install segno opencv-python pillow
+python examples/qr_optical.py            # data -> beam.gif -> decoded byte-exact
+```
+
+## Other carriers
+
 - **magbeam** — modulating a CPU's magnetic field to a phone magnetometer. The proof
-  that the core is genuinely carrier-agnostic.
+  that the core is genuinely carrier-agnostic (a wildly different physical channel).
+- **[applications/statusbus](applications/statusbus)** — connectionless status/presence
+  as a rateless bus, benchmarked against Windows shared memory & WMI.
 
 ## Optional SIMD C core (~70–85× faster)
 
