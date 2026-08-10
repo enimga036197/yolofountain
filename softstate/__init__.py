@@ -17,6 +17,7 @@ carrier-agnostic. One primitive; the consumer's role is the only thing that diff
 """
 from .core import Publisher, Subscriber
 from .channels import InMemoryChannel, UdpChannel
+from .store import Store
 
 __version__ = "0.1.0"
-__all__ = ["Publisher", "Subscriber", "InMemoryChannel", "UdpChannel"]
+__all__ = ["Publisher", "Subscriber", "InMemoryChannel", "UdpChannel", "Store"]

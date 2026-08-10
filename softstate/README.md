@@ -37,6 +37,30 @@ sub.get(1)          # -> (b"my current state", version, ts)   READER role
 sub.snapshot()      # -> {pid: (state, version, ts)}  (TTL-aged)
 ```
 
+## `Store` — a durable, crash-safe key/value store
+
+The everyday config/state store, built on the primitive. Each node owns a namespace
+and holds a merged view of all nodes' keys. Without a channel it's a **crash-safe local
+config store**; with one it's the *same* store, shared connectionlessly across a LAN.
+
+```python
+import softstate
+
+cfg = softstate.Store("app.state.json", node_id=1)   # + channel=UdpChannel() to share
+cfg.set("theme", "dark")
+cfg.set("volume", 42)
+cfg.get("theme")            # "dark"        (survives a full restart — it's on disk)
+cfg.on_change(lambda key: reload(key))      # hot-reload hook
+```
+
+The persistence is the piece the incumbents get wrong. A crash mid-save must never
+corrupt the store, so it writes to a temp file, `fsync`s, then **atomically replaces** —
+on disk you only ever see the old complete file or the new one, never a torn one — keeps
+the previous version as `.bak`, and checksums both so bit-rot is caught and the backup
+used. That's the crash-safe store the "write the config file in place" and
+shared-memory incumbents can't be (see [applications/statusbus](../applications/statusbus)
+for the measured torn-read / crash-wedge failures it avoids).
+
 ## One primitive, two roles
 
 The consumer's role is the *only* thing that differs — both sit on the same core:
@@ -57,6 +81,7 @@ do on update. softstate handles transport, versioning, demux, integrity and cryp
 | `Subscriber(password=None, ttl=None, on_update=None)` | `.feed(frame) -> pid-or-None`, `.get(pid)`, `.snapshot()`, `.rejected` |
 | `InMemoryChannel(loss=0, corrupt=0)` | `.subscribe(cb)`, `.send(frame)` — for tests/fault injection |
 | `UdpChannel(group, port)` | `.subscribe(cb)` (bg thread), `.send(frame)`, `.close()` — real LAN |
+| `Store(path, node_id, channel=None, password=None, refresh_interval=None)` | `.set(k,v)`, `.get(k)`, `.delete(k)`, `.keys()`, `.items()`, `.on_change(cb)` — durable KV |
 
 State is opaque bytes — you serialize your own (a struct, JSON, msgpack). softstate
 adds only a version + timestamp and manages latest-wins per publisher.
