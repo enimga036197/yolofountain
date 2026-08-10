@@ -1,5 +1,5 @@
 """
-beam — a tiny one-way fountain codec.
+yolofountain — a tiny one-way fountain codec.
 
 Spray a file over any *write-only* channel; catch it with no back-channel. The
 sender emits droplet frames forever; a receiver reconstructs the payload once it
@@ -8,15 +8,15 @@ late. No handshake, no ACK, no retransmit. Optional gzip and password encryption
 
 Quickstart::
 
-    import beam
+    import yolofountain
 
     # --- sender ---
-    tx = beam.Sender(b"hello world" * 1000, block_size=512, password="s3cret")
+    tx = yolofountain.Sender(b"hello world" * 1000, block_size=512, password="s3cret")
     for i in range(tx.n_blocks * 2):        # just keep spraying; more = more robust
         channel.send(tx.frame(i))           # tx.frame(i) -> bytes
 
     # --- receiver (elsewhere, no reply path needed) ---
-    rx = beam.Receiver()
+    rx = yolofountain.Receiver()
     for frame in channel:                   # whatever arrives, in any order
         if rx.add(frame):                   # True once the payload is complete
             break
@@ -24,12 +24,12 @@ Quickstart::
 
 Multiple files::
 
-    tx = beam.Sender.from_files([("a.txt", a), ("b.png", b)])
+    tx = yolofountain.Sender.from_files([("a.txt", a), ("b.png", b)])
     files = rx.files()                      # -> [{'name','mime','bytes'}, ...]
 
 Text channels (QR, clipboards, terminals) via a carrier::
 
-    from beam.carriers import base45_encode, base45_decode
+    from yolofountain.carriers import base45_encode, base45_decode
     text = base45_encode(tx.frame(i))       # send text ...
     frame = base45_decode(text)             # ... rebuild the frame
 

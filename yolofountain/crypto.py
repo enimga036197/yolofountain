@@ -1,13 +1,13 @@
 """
-beam.crypto — optional password encryption.
+yolofountain.crypto — optional password encryption.
 
 Applied to the whole payload *before* the fountain layer, so frames carry only
 opaque ciphertext: catching or holding the stream tells an eavesdropper nothing
 without the password. Authenticated (AEAD), so a wrong password or tampered data
 fails cleanly with an error rather than yielding plausible garbage.
 
-Requires the ``cryptography`` package (``pip install beam-codec[crypto]``). The rest
-of beam works without it; only encrypt/decrypt need it.
+Requires the ``cryptography`` package (``pip install yolofountain[crypto]``). The rest
+of yolofountain works without it; only encrypt/decrypt need it.
 
 Envelope layout (this is the encrypted payload the fountain then carries):
     b"BEC1" | salt[16] | nonce[12] | ChaCha20-Poly1305(ciphertext+tag)
@@ -21,7 +21,7 @@ _SALT = 16
 _NONCE = 12
 
 
-class BeamCryptoError(Exception):
+class YoloCryptoError(Exception):
     pass
 
 
@@ -30,9 +30,9 @@ def _need_cryptography():
         from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
         return ChaCha20Poly1305
     except Exception as e:  # pragma: no cover
-        raise BeamCryptoError(
+        raise YoloCryptoError(
             "password encryption needs the 'cryptography' package "
-            "(pip install beam-codec[crypto])") from e
+            "(pip install yolofountain[crypto])") from e
 
 
 _SCRYPT_N = 2 ** 15
@@ -57,11 +57,11 @@ def encrypt(data, password):
 
 
 def decrypt(blob, password):
-    """envelope + password -> plaintext bytes. Raises BeamCryptoError on wrong
+    """envelope + password -> plaintext bytes. Raises YoloCryptoError on wrong
     password or tampering."""
     ChaCha20Poly1305 = _need_cryptography()
     if blob[:4] != ENC_MAGIC:
-        raise BeamCryptoError("not a beam encrypted envelope")
+        raise YoloCryptoError("not a yolofountain encrypted envelope")
     salt = blob[4:4 + _SALT]
     nonce = blob[4 + _SALT:4 + _SALT + _NONCE]
     ct = blob[4 + _SALT + _NONCE:]
@@ -69,7 +69,7 @@ def decrypt(blob, password):
     try:
         return ChaCha20Poly1305(key).decrypt(nonce, ct, None)
     except Exception as e:
-        raise BeamCryptoError("wrong password or corrupt data") from e
+        raise YoloCryptoError("wrong password or corrupt data") from e
 
 
 def is_encrypted(blob):

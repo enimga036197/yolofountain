@@ -1,9 +1,9 @@
 """
-beam.carriers.text — turn a byte frame into TEXT and back.
+yolofountain.carriers.text — turn a byte frame into TEXT and back.
 
 The core codec is byte-oriented. But a large class of channels only ever hand you
 back *text, never raw bytes* — QR codes read through the native BarcodeDetector,
-copy-paste, terminals, chat, text-only APIs. A text carrier lets beam ride all of
+copy-paste, terminals, chat, text-only APIs. A text carrier lets yolofountain ride all of
 them.
 
 **base45** is the one that makes screen->camera QR transfer fast, and it is worth

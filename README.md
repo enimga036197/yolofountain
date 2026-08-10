@@ -1,7 +1,7 @@
-# beam
+# YoloFountain
 
 **A tiny one-way fountain codec — spray a file over any *write-only* channel, and
-catch it with no back-channel.**
+catch it with no back-channel.** You only send once; there's no asking again.
 
 The sender emits an endless stream of droplet frames; a receiver reconstructs the
 file once it has caught enough of them. Frames can be **lost, reordered, duplicated,
@@ -9,15 +9,15 @@ or joined late** and the transfer still completes. There is **no handshake, no A
 no retransmit request** — the receiver never has to talk back.
 
 ```python
-import beam
+import yolofountain
 
 # sender — just keep spraying; the receiver takes it from here
-tx = beam.Sender(open("photo.jpg", "rb").read(), block_size=1024, password="s3cret")
+tx = yolofountain.Sender(open("photo.jpg", "rb").read(), block_size=1024, password="s3cret")
 for i in range(tx.n_blocks * 2):
     channel.send(tx.frame(i))            # tx.frame(i) -> bytes
 
 # receiver — somewhere else, with no way to reply
-rx = beam.Receiver()
+rx = yolofountain.Receiver()
 for frame in channel:                    # whatever arrives, any order
     if rx.add(frame):                    # True once complete
         break
@@ -40,7 +40,7 @@ channels is **write-only**: you can transmit, and the far side simply cannot ans
 Over a one-way lossy channel you can't retransmit, so you use a **rateless erasure
 code**: the sender keeps emitting fresh *droplets*, each an XOR of a random subset of
 the file's blocks, and the receiver solves the file as soon as it has enough distinct
-ones — typically **1.0–1.4×** the file's worth. beam is a small, dependency-free,
+ones — typically **1.0–1.4×** the file's worth. YoloFountain is a small, dependency-free,
 carrier-agnostic implementation of exactly that, distilled from the
 [qrbeam](https://github.com/enimga036197/qrbeam) optical file-transfer app and proven
 on a second, wildly different carrier (a magnetic side-channel).
@@ -58,7 +58,7 @@ on a second, wildly different carrier (a magnetic side-channel).
 - **Carrier-agnostic.** The core speaks bytes and knows nothing about any medium.
   A "carrier" is a two-function seam; swap it to target QR, audio, a magnetic field…
 - **Integrity built in.** A per-frame CRC-32 rejects corrupt droplets before they can
-  poison the reconstruction (qrbeam leaned on QR's Reed–Solomon; beam stands alone).
+  poison the reconstruction (qrbeam leaned on QR's Reed–Solomon; yolofountain stands alone).
 - **Optional password encryption.** Authenticated ChaCha20-Poly1305 with an scrypt
   KDF, applied *before* the fountain — so merely seeing or holding the stream gets an
   eavesdropper nothing.
@@ -66,11 +66,11 @@ on a second, wildly different carrier (a magnetic side-channel).
 ## Text channels (base45 / base64)
 
 Many channels only ever return **text, never raw bytes** — QR via the native camera
-decoder, clipboards, terminals, chat, text APIs. A *text carrier* lets beam ride all
+decoder, clipboards, terminals, chat, text APIs. A *text carrier* lets yolofountain ride all
 of them:
 
 ```python
-from beam.carriers import base45_encode, base45_decode
+from yolofountain.carriers import base45_encode, base45_decode
 text  = base45_encode(tx.frame(i))    # send this string over a text-only channel
 frame = base45_decode(text)           # rebuild the exact frame on the far side
 ```
@@ -83,20 +83,20 @@ bytes. **base64** is included for non-QR text channels (denser, universal).
 ## Install
 
 ```bash
-pip install beam-codec           # core, zero dependencies
-pip install beam-codec[crypto]   # + password encryption (needs 'cryptography')
+pip install yolofountain           # core, zero dependencies
+pip install yolofountain[crypto]   # + password encryption (needs 'cryptography')
 ```
 
-Or just vendor the `beam/` folder — the core has no third-party dependencies.
+Or just vendor the `yolofountain/` folder — the core has no third-party dependencies.
 
 ## API
 
 | | |
 |---|---|
-| `beam.Sender(data, block_size=1024, password=None, compress=True)` | wrap bytes as an endless frame stream |
-| `beam.Sender.from_files([(name, bytes, mime?), …], …)` | multi-file transfer |
+| `yolofountain.Sender(data, block_size=1024, password=None, compress=True)` | wrap bytes as an endless frame stream |
+| `yolofountain.Sender.from_files([(name, bytes, mime?), …], …)` | multi-file transfer |
 | `sender.frame(i)` / `sender.spray(count=None)` | the i-th droplet / a generator of droplets |
-| `beam.Receiver()` | collects frames |
+| `yolofountain.Receiver()` | collects frames |
 | `receiver.add(frame) -> bool` | feed a frame; True once complete |
 | `receiver.result(password=None) -> bytes` | the reconstructed payload |
 | `receiver.files(password=None) -> [ {name, mime, bytes}, … ]` | as a container |
@@ -123,6 +123,16 @@ python tests/test_carriers.py    # base45 / base64 round-trip; a frame through a
   phone camera. The optical carrier this core was distilled from.
 - **magbeam** — modulating a CPU's magnetic field to a phone magnetometer. The proof
   that the core is genuinely carrier-agnostic.
+
+## Roadmap: a SIMD C core
+
+The pure-Python codec is fine for the slow physical channels this was born on, but
+the hot loop is nothing but **XOR of aligned blocks + a peeling pass** — a
+memory-bandwidth-bound SoA workload, exactly the shape a SIMD C core eats alive. A
+drop-in `ctypes`/`cffi` core (AVX2 `_mm256_xor`, aligned blocks, no remainder loops)
+should push encode/decode to multiple GB/s and make YoloFountain viable as a
+general erasure layer, not just a low-rate one. The design seam is already clean:
+only `Encoder.frame` and `Decoder.ingest` touch bytes in bulk.
 
 ## License
 

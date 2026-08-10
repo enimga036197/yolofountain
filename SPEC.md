@@ -1,6 +1,6 @@
-# beam wire format (v1)
+# YoloFountain wire format (v1)
 
-A **beam** transfer is a one-way, rateless stream of self-describing **frames**. The
+A **YoloFountain** transfer is a one-way, rateless stream of self-describing **frames**. The
 sender emits `frame(0), frame(1), …` and never stops on its own; a receiver
 reconstructs the payload once it has caught enough distinct frames. There is no
 handshake, acknowledgement, or retransmit — the receiver need not be able to talk
@@ -97,10 +97,10 @@ order:
 A receiver reverses this after reconstruction: **decrypt** (if `ENCRYPTED`), then
 **gunzip** (if `GZIP`), then parse the container if present.
 
-## 6. Container (`BEAM`)
+## 6. Container (`YOLO`)
 
 ```
-'B','E','A','M'          (4 bytes)
+'Y','O','L','O'          (4 bytes)
 manifest_len             u32
 manifest                 UTF-8 JSON: [ {"n": name, "s": size, "t": mime}, … ]
 file bytes               each file's bytes, concatenated in manifest order

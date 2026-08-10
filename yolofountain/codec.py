@@ -1,5 +1,5 @@
 """
-beam.codec — the carrier-agnostic fountain transfer core.
+yolofountain.codec — the carrier-agnostic fountain transfer core.
 
 A *rateless* one-way file codec: the sender emits droplet frames forever
 (``frame(0), frame(1), ...``); a receiver catches whatever arrives — frames may be
@@ -14,7 +14,7 @@ it stands alone on a bare channel: a **per-frame CRC-32** (qrbeam relied on the 
 layer's Reed-Solomon), and gzip/encryption flags in a versioned header.
 
 Wire format is specified in SPEC.md. Nothing in this module knows about QR, base45,
-audio, or any physical medium — carriers are adapters (see ``beam.carriers``).
+audio, or any physical medium — carriers are adapters (see ``yolofountain.carriers``).
 """
 import struct
 import zlib
@@ -27,7 +27,7 @@ HDR = 16
 CRC = 4
 FLAG_GZIP = 1
 FLAG_ENC = 2
-CMAGIC = b"BEAM"                      # multi-file container magic
+CMAGIC = b"YOLO"                      # multi-file container magic
 
 _HDR = struct.Struct("<BBBBHIHI")     # magic0,magic1,ver,flags,session,totalLen,K,frameIndex  = 16 bytes
 
@@ -277,7 +277,7 @@ def build_container(files):
 def parse_container(buf):
     """-> list of {'name','mime','bytes'}. Raises if not a container."""
     if buf[0:4] != CMAGIC:
-        raise ValueError("not a beam container")
+        raise ValueError("not a yolofountain container")
     mlen = struct.unpack_from("<I", buf, 4)[0]
     manifest = json.loads(buf[8:8 + mlen].decode())
     p, files = 8 + mlen, []

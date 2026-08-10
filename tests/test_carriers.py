@@ -3,8 +3,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import beam
-from beam.carriers import base45_encode, base45_decode, base64_encode, base64_decode
+import yolofountain
+from yolofountain.carriers import base45_encode, base45_decode, base64_encode, base64_decode
 
 _B45 = set("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:")
 
@@ -29,9 +29,9 @@ def test_base64_roundtrip_random():
 
 
 def test_frame_through_base45():
-    # a real beam frame survives the text hop and still decodes
-    tx = beam.Sender(os.urandom(2000), block_size=180, compress=False)
-    rx = beam.Receiver()
+    # a real yolofountain frame survives the text hop and still decodes
+    tx = yolofountain.Sender(os.urandom(2000), block_size=180, compress=False)
+    rx = yolofountain.Receiver()
     i = 0
     while i < 10000:
         text = base45_encode(tx.frame(i)); i += 1

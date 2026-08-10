@@ -4,8 +4,8 @@ import sys
 import random
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import beam
-from beam.codec import Encoder, Decoder, unpack_frame
+import yolofountain
+from yolofountain.codec import Encoder, Decoder, unpack_frame
 
 
 def _run(payload_len, K, loss, late_join, seed, corrupt=0.0, mult=8):
@@ -56,10 +56,10 @@ def test_bit_corruption_rejected():
 
 
 def test_container_and_gzip():
-    files = [("hello.txt", b"hello beam " * 50, "text/plain"),
+    files = [("hello.txt", b"hello yolofountain " * 50, "text/plain"),
              ("data.bin", bytes(range(256)) * 4)]
-    tx = beam.Sender.from_files(files, block_size=64)
-    rx = beam.Receiver()
+    tx = yolofountain.Sender.from_files(files, block_size=64)
+    rx = yolofountain.Receiver()
     i = 0
     while not rx.add(tx.frame(i)) and i < 10000:
         i += 1
@@ -71,8 +71,8 @@ def test_container_and_gzip():
 
 def test_high_level_roundtrip():
     payload = os.urandom(5000)
-    tx = beam.Sender(payload, block_size=200, compress=False)
-    rx = beam.Receiver()
+    tx = yolofountain.Sender(payload, block_size=200, compress=False)
+    rx = yolofountain.Receiver()
     i = 0
     while not rx.add(tx.frame(i)) and i < 10000:
         i += 1

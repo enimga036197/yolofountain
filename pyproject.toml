@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "beam-codec"
+name = "yolofountain"
 version = "0.1.0"
 description = "A tiny one-way fountain codec — spray a file over any write-only channel, catch it with no back-channel."
 readme = "README.md"
@@ -28,8 +28,8 @@ classifiers = [
 crypto = ["cryptography>=3.4"]
 
 [project.urls]
-Homepage = "https://github.com/enimga036197/beam"
-Spec = "https://github.com/enimga036197/beam/blob/main/SPEC.md"
+Homepage = "https://github.com/enimga036197/yolofountain"
+Spec = "https://github.com/enimga036197/yolofountain/blob/main/SPEC.md"
 
 [tool.setuptools.packages.find]
-include = ["beam*"]
+include = ["yolofountain*"]

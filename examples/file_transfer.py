@@ -13,7 +13,7 @@ import sys
 import random
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import beam
+import yolofountain
 
 path = sys.argv[1] if len(sys.argv) > 1 else None
 password = sys.argv[2] if len(sys.argv) > 2 else None
@@ -21,18 +21,18 @@ password = sys.argv[2] if len(sys.argv) > 2 else None
 if path:
     data = open(path, "rb").read()
     name = os.path.basename(path)
-    tx = beam.Sender.from_files([(name, data)], block_size=1024, password=password)
+    tx = yolofountain.Sender.from_files([(name, data)], block_size=1024, password=password)
 else:
     data = os.urandom(40 * 1024)
     name = "random.bin"
-    tx = beam.Sender.from_files([(name, data)], block_size=1024, password=password)
+    tx = yolofountain.Sender.from_files([(name, data)], block_size=1024, password=password)
 
 print(f"sending {name}: {len(data)} bytes  ->  {tx.n_blocks} blocks"
       f"{'  (encrypted)' if password else ''}")
 
 rng = random.Random(1)
 LOSS = 0.30
-rx = beam.Receiver()
+rx = yolofountain.Receiver()
 sent = received = 0
 i = 0
 while not rx.done and i < tx.n_blocks * 20:
