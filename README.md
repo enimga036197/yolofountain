@@ -141,13 +141,16 @@ Measured — 4 MB payload, K=4096, 40 % loss (repair-heavy), i3-12100F / AVX2:
 
 | path | pure-Python | SIMD C core | speedup |
 |---|---|---|---|
-| encode | 3.1 MB/s | **263 MB/s** | 85× |
-| decode (peeling) | 2.2 MB/s | **154 MB/s** | 70× |
+| encode | 3.2 MB/s | **~300 MB/s** | ~90× |
+| decode (peeling) | 2.2 MB/s | **~195 MB/s** | ~90× |
 
-It lands at a few hundred MB/s rather than the XOR's raw GB/s because the per-frame
-*Python* scaffolding (block-selection PRNG, CRC-32, struct packing) is now the
-ceiling, not the XOR — porting block selection to C is the next lever. The core is a
-pure accelerator: build it or don't, results are identical.
+What runs in C: block-selection (mulberry32 + robust soliton), the XOR, and the
+whole-frame encode (header + select + XOR + CRC-32 in one call); buffer addresses are
+cached across frames. What's left is the per-frame Python↔C call and the `bytes()`
+copy — only batching many frames per call would push past it, and that's not worth the
+API cost for a codec whose one-way channels top out well below 300 MB/s. The peeling
+decoder's data structures stay in Python (they use the native XOR). Pure accelerator:
+build it or don't, results are bit-identical.
 
 ## License
 

@@ -168,18 +168,27 @@ class Encoder:
         self.session = session
         self.flags = flags
         self.cdf = soliton_cdf(self.N) if self.N > 4 else None
+        if _NATIVE:
+            self._cdf_c = _nat.make_cdf(self.cdf)          # C double[] once per transfer
+            self._scratch = _nat.make_scratch(self.N)      # reusable index buffer
+            self._plen = len(self.payload)
+            self._payload_addr = _nat.addr_of(self.payload)
+            self._framebuf = bytearray(HDR + self.K + CRC)  # reused; C writes here each frame
+            self._out_addr = _nat.addr_of(self._framebuf)
 
     def frame(self, frame_index):
-        idxs = blocks_for_frame(frame_index, self.N, self.cdf)
         if _NATIVE:
-            body = _nat.encode_frame_body(self.K, self.payload, idxs)   # whole frame in one C call
-        else:
-            body = bytearray(self.K)
-            for bi in idxs:
-                off = bi * self.K
-                n = min(self.K, len(self.payload) - off)
-                if n > 0:
-                    _xor_into(body, self.payload, off, n)
+            # one C call: header + block-selection + XOR + CRC-32, into a reused buffer
+            _nat.encode_full(self._out_addr, MAGIC0, MAGIC1, VERSION, self.flags, self.session,
+                             self._plen, self.K, frame_index, self.N,
+                             self._payload_addr, self._plen, self._cdf_c, self._scratch)
+            return bytes(self._framebuf)
+        body = bytearray(self.K)
+        for bi in blocks_for_frame(frame_index, self.N, self.cdf):
+            off = bi * self.K
+            n = min(self.K, len(self.payload) - off)
+            if n > 0:
+                _xor_into(body, self.payload, off, n)
         return pack_frame(self.session, self.flags, len(self.payload), self.K, frame_index, body)
 
 
@@ -206,6 +215,9 @@ class Decoder:
         self.by_idx = {}
         self.cdf = soliton_cdf(self.N) if self.N > 4 else None
         self.frames_used = 0
+        if _NATIVE:
+            self._cdf_c = _nat.make_cdf(self.cdf)
+            self._idx_c = _nat.make_scratch(self.N)
 
     def add_frame_bytes(self, raw):
         hdr = unpack_frame(raw)
@@ -216,8 +228,13 @@ class Decoder:
     def ingest(self, frame_index, data):
         self.frames_used += 1
         before = self.solved
+        if _NATIVE:
+            cnt = _nat.blocks(frame_index, self.N, self._cdf_c, self._idx_c)   # C block-selection
+            idxs = self._idx_c[:cnt]
+        else:
+            idxs = blocks_for_frame(frame_index, self.N, self.cdf)
         s = set()
-        for bi in blocks_for_frame(frame_index, self.N, self.cdf):
+        for bi in idxs:
             if self.have[bi]:
                 _xor_into(data, self.data, bi * self.K, self.K)
             elif bi in s:
