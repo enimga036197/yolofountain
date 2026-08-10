@@ -32,4 +32,4 @@ Homepage = "https://github.com/enimga036197/yolofountain"
 Spec = "https://github.com/enimga036197/yolofountain/blob/main/SPEC.md"
 
 [tool.setuptools.packages.find]
-include = ["yolofountain*"]
+include = ["yolofountain*", "softstate*"]

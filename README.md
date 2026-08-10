@@ -140,8 +140,18 @@ python examples/qr_optical.py            # data -> beam.gif -> decoded byte-exac
 
 - **magbeam** — modulating a CPU's magnetic field to a phone magnetometer. The proof
   that the core is genuinely carrier-agnostic (a wildly different physical channel).
-- **[applications/statusbus](applications/statusbus)** — connectionless status/presence
-  as a rateless bus, benchmarked against Windows shared memory & WMI.
+
+## softstate — coordination built on the codec
+
+**[softstate](softstate)** is a small library on top of YoloFountain: publish *absolute
+versioned state*, subscribe as a change-notified **reader** or a reconciling **tracker**.
+Connectionless, torn-free (CRC-gated), self-healing (loss & late-join are free),
+crash-graceful, optionally encrypted, carrier-agnostic (in-memory / UDP multicast / a
+physical beam). One primitive; two demos sit on it as thin consumers:
+
+- **[applications/statusbus](applications/statusbus)** — connectionless status/presence,
+  benchmarked against Windows shared memory & WMI (the incumbents deliver torn reads and
+  wedge on a crash; the bus never does).
 - **[applications/trajectory](applications/trajectory)** — a chaotic sim kept on course by a
   lossy absolute-state fountain (soft-state control): loss-free, late-join-free, CRC-gated.
 
