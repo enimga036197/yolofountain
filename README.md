@@ -142,6 +142,8 @@ python examples/qr_optical.py            # data -> beam.gif -> decoded byte-exac
   that the core is genuinely carrier-agnostic (a wildly different physical channel).
 - **[applications/statusbus](applications/statusbus)** — connectionless status/presence
   as a rateless bus, benchmarked against Windows shared memory & WMI.
+- **[applications/trajectory](applications/trajectory)** — a chaotic sim kept on course by a
+  lossy absolute-state fountain (soft-state control): loss-free, late-join-free, CRC-gated.
 
 ## Optional SIMD C core (~70–85× faster)
 
