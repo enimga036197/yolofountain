@@ -21,6 +21,17 @@ import zlib
 import gzip as _gzip
 import json
 
+# Optional SIMD C core (yolofountain/_yolocore.*). Same results, just faster; the
+# codec works identically without it.
+try:
+    from . import _native as _nat
+    _NATIVE = _nat.AVAILABLE
+except Exception:
+    _nat = None
+    _NATIVE = False
+
+_XOR_MIN = 64          # below this block size the ctypes call costs more than it saves
+
 MAGIC0, MAGIC1 = 0xB5, 0x1C
 VERSION = 1
 HDR = 16
@@ -117,8 +128,11 @@ def blocks_for_frame(frame_index, N, cdf):
 
 
 def _xor_into(dst, src, src_off, length):
-    for i in range(length):
-        dst[i] ^= src[src_off + i]
+    if _NATIVE and length >= _XOR_MIN:
+        _nat.xor_into(dst, src, src_off, length)
+    else:
+        for i in range(length):
+            dst[i] ^= src[src_off + i]
 
 
 # ---------- frame (de)serialisation ----------
@@ -156,12 +170,16 @@ class Encoder:
         self.cdf = soliton_cdf(self.N) if self.N > 4 else None
 
     def frame(self, frame_index):
-        body = bytearray(self.K)
-        for bi in blocks_for_frame(frame_index, self.N, self.cdf):
-            off = bi * self.K
-            n = min(self.K, len(self.payload) - off)
-            if n > 0:
-                _xor_into(body, self.payload, off, n)
+        idxs = blocks_for_frame(frame_index, self.N, self.cdf)
+        if _NATIVE:
+            body = _nat.encode_frame_body(self.K, self.payload, idxs)   # whole frame in one C call
+        else:
+            body = bytearray(self.K)
+            for bi in idxs:
+                off = bi * self.K
+                n = min(self.K, len(self.payload) - off)
+                if n > 0:
+                    _xor_into(body, self.payload, off, n)
         return pack_frame(self.session, self.flags, len(self.payload), self.K, frame_index, body)
 
 

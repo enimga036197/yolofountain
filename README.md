@@ -124,15 +124,30 @@ python tests/test_carriers.py    # base45 / base64 round-trip; a frame through a
 - **magbeam** — modulating a CPU's magnetic field to a phone magnetometer. The proof
   that the core is genuinely carrier-agnostic.
 
-## Roadmap: a SIMD C core
+## Optional SIMD C core (~70–85× faster)
 
-The pure-Python codec is fine for the slow physical channels this was born on, but
-the hot loop is nothing but **XOR of aligned blocks + a peeling pass** — a
-memory-bandwidth-bound SoA workload, exactly the shape a SIMD C core eats alive. A
-drop-in `ctypes`/`cffi` core (AVX2 `_mm256_xor`, aligned blocks, no remainder loops)
-should push encode/decode to multiple GB/s and make YoloFountain viable as a
-general erasure layer, not just a low-rate one. The design seam is already clean:
-only `Encoder.frame` and `Decoder.ingest` touch bytes in bulk.
+The codec's bulk work is XOR of aligned blocks — frame assembly on encode, peeling
+on decode — a memory-bandwidth-bound SoA workload. A tiny AVX2 C core (runtime-
+dispatched, SSE2 fallback, `yolofountain/native/yolo_core.c`) handles it; the
+pure-Python path stays as a bit-for-bit-identical fallback (a test asserts they
+agree, and nothing on the wire changes).
+
+```bash
+python build.py                 # -> yolofountain/_yolocore.{dll,so,dylib}  (MSVC or gcc/clang)
+python examples/benchmark.py
+```
+
+Measured — 4 MB payload, K=4096, 40 % loss (repair-heavy), i3-12100F / AVX2:
+
+| path | pure-Python | SIMD C core | speedup |
+|---|---|---|---|
+| encode | 3.1 MB/s | **263 MB/s** | 85× |
+| decode (peeling) | 2.2 MB/s | **154 MB/s** | 70× |
+
+It lands at a few hundred MB/s rather than the XOR's raw GB/s because the per-frame
+*Python* scaffolding (block-selection PRNG, CRC-32, struct packing) is now the
+ceiling, not the XOR — porting block selection to C is the next lever. The core is a
+pure accelerator: build it or don't, results are identical.
 
 ## License
 

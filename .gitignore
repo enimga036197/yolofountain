@@ -8,3 +8,11 @@ dist/
 venv/
 *.bak
 .DS_Store
+
+# native SIMD core — built per-machine via build.py (source is committed)
+*.dll
+*.so
+*.dylib
+*.exp
+*.lib
+*.obj
