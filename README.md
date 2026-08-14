@@ -154,6 +154,9 @@ physical beam). One primitive; two demos sit on it as thin consumers:
   wedge on a crash; the bus never does).
 - **[applications/trajectory](applications/trajectory)** — a chaotic sim kept on course by a
   lossy absolute-state fountain (soft-state control): loss-free, late-join-free, CRC-gated.
+- **[applications/flock](applications/flock)** — a real tool: a **zero-config shared clipboard
+  + file drop** for your machines. Copy on one, paste on any other; drop a file to all.
+  No accounts, no cloud, no pairing, no server; encrypted; works over a LAN or ZeroTier.
 
 ## Optional SIMD C core (~70–85× faster)
 
